@@ -2,13 +2,15 @@
 # Recipes para desarrollo, testing y despliegue.
 
 VENV := .venv
+PYTHON ?= python3.11
 PIP := $(VENV)/bin/pip
 
 .PHONY: help install lint format test clean apply destroy endpoint-up endpoint-down
 
 help:
 	@echo "Recipes disponibles:"
-	@echo "  make install       Crear .venv e instalar dependencias Python"
+	@echo "  make install       Crear .venv (Python 3.11) e instalar dependencias"
+	@echo "                     Override: make install PYTHON=/ruta/a/python3.11"
 	@echo "  make lint          Correr pylint + black --check (dentro del venv)"
 	@echo "  make format        Formatear con black (dentro del venv)"
 	@echo "  make test          Correr pytest con coverage (dentro del venv)"
@@ -22,7 +24,7 @@ help:
 	@echo "  source $(VENV)/bin/activate"
 
 install:
-	python -m venv $(VENV)
+	$(PYTHON) -m venv $(VENV)
 	$(PIP) install --upgrade pip
 	$(PIP) install -r requirements.txt
 

@@ -16,16 +16,29 @@ Resumen:
 
 ## Setup
 
+### Prerequisitos
+
+- **Python 3.11** (no 3.12+). El stack PyTorch / SageMaker DLC está fijado a 3.11 en clase. Si tu sistema sólo trae otra versión:
+  - **pyenv** (recomendado, multiplataforma): `sudo pacman -S pyenv` (Arch) / `brew install pyenv` (Mac). Luego `pyenv install 3.11.10 && pyenv local 3.11.10`. Requiere init en tu shell rc, ver https://github.com/pyenv/pyenv#installation.
+  - **AUR** (Arch): `yay -S python311` o `paru -S python311`.
+  - **apt** (Ubuntu/Debian): `sudo apt install python3.11 python3.11-venv`.
+- **AWS CLI v2** con perfil `mlemons` apuntando a `us-east-2`.
+- **Terraform** ≥ 1.5.
+
+### Pasos
+
 1. Configurar AWS CLI con region `us-east-2`:
    ```bash
    aws configure --profile mlemons
    export AWS_PROFILE=mlemons
    ```
-2. Instalar dependencias Python (crea `.venv/` automáticamente):
+2. Instalar dependencias Python (crea `.venv/` con Python 3.11):
    ```bash
    make install
+   # Si tu binario de Python 3.11 no se llama python3.11:
+   make install PYTHON=/ruta/a/python3.11
    ```
-   Para correr Jupyter o comandos ad-hoc, activa el venv:
+3. Para correr Jupyter o comandos ad-hoc, activa el venv:
    ```bash
    source .venv/bin/activate
    ```
