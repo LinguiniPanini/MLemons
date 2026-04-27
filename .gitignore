@@ -1,0 +1,64 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+.venv/
+venv/
+env/
+ENV/
+.pytest_cache/
+.coverage
+htmlcov/
+.tox/
+*.egg-info/
+build/
+dist/
+
+# Data (DVC maneja estos vía S3 remote)
+data/*
+!data/.gitignore
+!data/*.dvc
+!data/.gitkeep
+
+# Modelos locales
+*.pt
+*.pth
+*.tar.gz
+*.joblib
+*.pkl
+
+# Terraform
+*.tfstate
+*.tfstate.*
+.terraform/
+.terraform.lock.hcl
+*.tfplan
+crash.log
+
+# AWS
+.aws/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Notebooks
+*.ipynb_checkpoints/
+
+# Logs
+*.log
+
+# Claude Code config local
+.claude/settings.local.json
+
+# Variables de entorno
+.env
+.env.local
