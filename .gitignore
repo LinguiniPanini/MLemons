@@ -62,3 +62,6 @@ Thumbs.db
 # Variables de entorno
 .env
 .env.local
+
+# Tooling Python local (pyenv) — cada quien elige su versión 3.11
+.python-version
