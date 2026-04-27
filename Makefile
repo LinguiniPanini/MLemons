@@ -1,32 +1,40 @@
 # Makefile — MLemons
 # Recipes para desarrollo, testing y despliegue.
 
+VENV := .venv
+PIP := $(VENV)/bin/pip
+
 .PHONY: help install lint format test clean apply destroy endpoint-up endpoint-down
 
 help:
 	@echo "Recipes disponibles:"
-	@echo "  make install       Instalar dependencias Python"
-	@echo "  make lint          Correr pylint + black --check"
-	@echo "  make format        Formatear con black"
-	@echo "  make test          Correr pytest con coverage"
+	@echo "  make install       Crear .venv e instalar dependencias Python"
+	@echo "  make lint          Correr pylint + black --check (dentro del venv)"
+	@echo "  make format        Formatear con black (dentro del venv)"
+	@echo "  make test          Correr pytest con coverage (dentro del venv)"
 	@echo "  make apply         terraform apply (toda la infra)"
 	@echo "  make destroy       terraform destroy (toda la infra)"
 	@echo "  make endpoint-up   Crear endpoint SageMaker Modelo B"
 	@echo "  make endpoint-down Apagar endpoint SageMaker Modelo B"
 	@echo "  make clean         Limpiar artefactos (__pycache__, .pytest_cache)"
+	@echo ""
+	@echo "Para usar Jupyter o comandos ad-hoc, activa el venv:"
+	@echo "  source $(VENV)/bin/activate"
 
 install:
-	pip install -r requirements.txt
+	python -m venv $(VENV)
+	$(PIP) install --upgrade pip
+	$(PIP) install -r requirements.txt
 
 lint:
-	pylint src/ tests/
-	black --check src/ tests/
+	$(VENV)/bin/pylint src/ tests/
+	$(VENV)/bin/black --check src/ tests/
 
 format:
-	black src/ tests/
+	$(VENV)/bin/black src/ tests/
 
 test:
-	pytest tests/ --cov=src --cov-report=term-missing
+	$(VENV)/bin/pytest tests/ --cov=src --cov-report=term-missing
 
 apply:
 	cd infra && terraform init && terraform apply
