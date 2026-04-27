@@ -50,5 +50,5 @@ endpoint-down:
 	aws sagemaker delete-endpoint-config --endpoint-config-name mlemons-modelo-b-config || true
 
 clean:
-	find . -type d -name __pycache__ -exec rm -rf {} + 2>/dev/null || true
+	find . -type d -name __pycache__ -not -path './$(VENV)/*' -exec rm -rf {} + 2>/dev/null || true
 	rm -rf .pytest_cache .coverage htmlcov
