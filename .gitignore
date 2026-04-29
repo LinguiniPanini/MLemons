@@ -63,5 +63,7 @@ Thumbs.db
 .env
 .env.local
 
-# Tooling Python local (pyenv) — cada quien elige su versión 3.11
+# Tooling local de versiones (pyenv / mise) — cada quien elige cómo instala 3.11
 .python-version
+.mise.toml
+.tool-versions
