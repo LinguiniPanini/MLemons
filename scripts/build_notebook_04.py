@@ -19,6 +19,15 @@ cells.append(nbf.v4.new_markdown_cell(
     "Pre-requisitos: notebook 03 ejecutado y Model Package aprobado, `terraform apply` con `-var model_package_arn=<arn>`."
 ))
 
+cells.append(nbf.v4.new_markdown_cell(
+    "## Sobre el lote en esta demo\n\n"
+    "En produccion un lote seria una foto fisica de varios limones acomodados en banda. "
+    "El dataset sintetico para componer lotes digitales se recorto del proyecto (decision D5 revisada el 2026-05-12). "
+    "Para esta demo se simula un lote tomando N imagenes individuales del Lemon Quality Dataset de Kaggle y "
+    "tratandolas como si fueran las detecciones de un lote real. El pipeline corre identico: cada imagen pasa por "
+    "el endpoint, se acumulan las predicciones y se calcula un score promedio."
+))
+
 cells.append(nbf.v4.new_code_cell(
     "import json\n"
     "import os\n"
@@ -115,6 +124,31 @@ cells.append(nbf.v4.new_code_cell(
 ))
 
 cells.append(nbf.v4.new_markdown_cell(
+    "## Tiempos del pipeline\n\n"
+    "Cada step de la Step Function (`InvokeModeloA` y `ComputeScore`) tiene su propio evento de entrada y salida. "
+    "Calculamos cuanto tomo cada uno y la latencia total del lote."
+))
+
+cells.append(nbf.v4.new_code_cell(
+    "history = sfn.get_execution_history(executionArn=execution_arn)['events']\n"
+    "starts = {}\n"
+    "durations = {}\n"
+    "for ev in history:\n"
+    "    t = ev['timestamp']\n"
+    "    if ev['type'] == 'TaskStateEntered':\n"
+    "        name = ev['stateEnteredEventDetails']['name']\n"
+    "        starts[name] = t\n"
+    "    elif ev['type'] == 'TaskStateExited':\n"
+    "        name = ev['stateExitedEventDetails']['name']\n"
+    "        if name in starts:\n"
+    "            durations[name] = (t - starts[name]).total_seconds()\n"
+    "total = (desc['stopDate'] - desc['startDate']).total_seconds()\n"
+    "for name, secs in durations.items():\n"
+    "    print(f'  {name:14s}: {secs:.2f}s')\n"
+    "print(f'  {\"TOTAL\":14s}: {total:.2f}s')"
+))
+
+cells.append(nbf.v4.new_markdown_cell(
     "## Validar registro en DynamoDB"
 ))
 
@@ -123,6 +157,42 @@ cells.append(nbf.v4.new_code_cell(
     "assert item is not None, 'No se persistio el lote en DynamoDB'\n"
     "for k, v in item.items():\n"
     "    print(f'  {k:14s} = {v}')"
+))
+
+cells.append(nbf.v4.new_markdown_cell(
+    "## Score esperado vs obtenido\n\n"
+    "Como las imagenes vienen del dataset etiquetado podemos calcular el score esperado "
+    "(suponiendo que el modelo no se equivoca) y compararlo con el que entrego el pipeline. "
+    "La diferencia entre los dos es indicativa del error del modelo en este lote."
+))
+
+cells.append(nbf.v4.new_code_cell(
+    "import sys\n"
+    "sys.path.insert(0, '../src/lambda_code/compute_score')\n"
+    "from scoring_logic import score_lote  # mismo import que usa la Lambda en runtime\n"
+    "\n"
+    "predicciones_esperadas = []\n"
+    "for path in muestras:\n"
+    "    clase = 'good_quality' if 'good_quality' in path else 'bad_quality'\n"
+    "    predicciones_esperadas.append({'predicted_class': clase})\n"
+    "esperado = score_lote(predicciones_esperadas, threshold=75)\n"
+    "obtenido = {\n"
+    "    'score': float(item['score']),\n"
+    "    'decision': item['decision'],\n"
+    "    'distribucion': {k: int(v) for k, v in item['distribucion'].items()},\n"
+    "    'n_images': int(item['n_images']),\n"
+    "}\n"
+    "print('Esperado (segun etiquetas del dataset):')\n"
+    "print(f'  score = {esperado[\"score\"]} -> {esperado[\"decision\"]}')\n"
+    "print(f'  distribucion = {esperado[\"distribucion\"]}')\n"
+    "print()\n"
+    "print('Obtenido (segun predicciones del modelo):')\n"
+    "print(f'  score = {obtenido[\"score\"]} -> {obtenido[\"decision\"]}')\n"
+    "print(f'  distribucion = {obtenido[\"distribucion\"]}')\n"
+    "print()\n"
+    "delta = obtenido['score'] - esperado['score']\n"
+    "print(f'Delta score: {delta:+.2f}')\n"
+    "print('Coincide decision:', obtenido['decision'] == esperado['decision'])"
 ))
 
 cells.append(nbf.v4.new_markdown_cell(
@@ -136,6 +206,18 @@ cells.append(nbf.v4.new_code_cell(
     "#     key = u.replace(f's3://{BUCKET_RAW}/', '')\n"
     "#     s3.delete_object(Bucket=BUCKET_RAW, Key=key)\n"
     "# print('cleanup ok')"
+))
+
+cells.append(nbf.v4.new_markdown_cell(
+    "## Resumen\n\n"
+    "Lo que demuestra esta corrida:\n\n"
+    "- El modelo entrenado en SageMaker esta servido en un endpoint managed (`mlemons-modelo-a-endpoint`, `ml.t2.medium`).\n"
+    "- Las dos Lambdas (`invoke_modelo_a` y `compute_score`) corren dentro de una Step Function (`mlemons-pipeline`) "
+    "  que orquesta inferencia + scoring + persistencia.\n"
+    "- El score y la decision del lote quedan en DynamoDB (`mlemons_lotes`) con su timestamp.\n"
+    "- Toda la infraestructura es Terraform; el endpoint se levanta y se baja con `make endpoint-up` / `make endpoint-down`.\n\n"
+    "Costos relevantes: el endpoint `ml.t2.medium` cuesta ~$0.06/hora encendido. "
+    "Apagarlo entre demos con `make endpoint-down` evita gastos pasivos."
 ))
 
 nb["cells"] = cells
