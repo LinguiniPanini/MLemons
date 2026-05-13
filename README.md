@@ -43,26 +43,36 @@ Crea 4 buckets S3, 3 roles IAM, DynamoDB, Lambdas, Step Function, alarmas CloudW
 ### 2. Dataset versionado y subido a S3
 ```bash
 dvc remote add -d s3remote s3://mlemons-raw-<acct>/dvc-store   # primera vez
-dvc push                                                       # sube data/lemons/
+dvc push                                                       # sube data/lemons/ y models/modelo_a.pth
 aws s3 sync data/lemons s3://mlemons-raw-<acct>/lemons/        # estructura plana para SageMaker
 ```
 
 ### 3. Entrenar Modelo A en SageMaker
-Abrir `notebooks/03_modelo_a_sagemaker.ipynb` y ejecutar celdas. Produce:
-- Training job (`mlemons-modelo-a-*`)
-- `model_data.tar.gz` en `s3://mlemons-models-<acct>/modelo-a/...`
-- Run de MLflow local en `mlruns/`
-- Model Package en `mlemons-modelo-a-group` con `ApprovalStatus = Approved`
-
-### 4. Crear endpoint con el Model Package aprobado
 ```bash
-# tomar el ARN del notebook 03
+python scripts/run_training.py
+```
+Dispara el training job sin Jupyter. Equivalente al notebook `03_modelo_a_sagemaker.ipynb`. Produce un job `mlemons-modelo-a-*` con `model.tar.gz` en `s3://mlemons-models-<acct>/modelo-a/.../output/`.
+
+### 4. Empaquetar modelo y registrarlo
+SageMaker PyTorch container espera `code/inference.py` dentro del `model.tar.gz`; el training job solo guarda `modelo_a.pth`. Por eso hay que repackagear:
+```bash
+python scripts/repack_model.py            # baja, inyecta code/inference.py, sube a /repacked/
+python scripts/register_model_package.py  # crea Model Package Group + Approved
+```
+El segundo script imprime el ARN del Model Package al final.
+
+### 5. Crear endpoint con el Model Package aprobado
+```bash
 cd infra
-terraform apply -var "model_package_arn=arn:aws:sagemaker:us-east-2:<acct>:model-package/mlemons-modelo-a-group/1"
+terraform apply -var "model_package_arn=<arn-impreso-en-paso-4>"
 ```
 
-### 5. Demo end-to-end
-Abrir `notebooks/04_demo_e2e.ipynb`: sube 6 imagenes del test set, dispara la Step Function, valida DynamoDB.
+### 6. Smoke test y demo end-to-end
+```bash
+python scripts/smoke_test_endpoint.py data/lemons/good_quality/good_quality_0.jpg
+# si responde, abrir notebooks/04_demo_e2e.ipynb para correr el pipeline completo
+```
+El notebook 04 sube 6 imagenes mixtas a S3, dispara la Step Function, valida que DynamoDB tenga el item con score + decision.
 
 ## Cleanup
 
@@ -74,8 +84,15 @@ make destroy                 # terraform destroy de todo
 ## Tests
 
 ```bash
-make test                    # pytest del scoring_logic + lint
+make test                    # pytest tests/ + black --check (19 tests)
 ```
+
+Cobertura:
+- `test_scoring_logic.py` (9 tests) — logica pura del score sin AWS.
+- `test_invoke_modelo_a.py` (5 tests) — handler con mocks de S3 y SageMaker runtime.
+- `test_compute_score_handler.py` (5 tests) — handler con mock de DynamoDB.
+
+CI corre los 19 tests en GitHub Actions en cada push/PR a `main`.
 
 ## Estructura
 
@@ -93,12 +110,18 @@ MLemons/
     03_modelo_a_sagemaker.ipynb  # training en SageMaker + Model Registry
     04_demo_e2e.ipynb        # pipeline end-to-end en AWS
   scripts/
-    build_notebook_03.py     # regenera notebook 03 desde Python
-    build_notebook_04.py     # idem 04
-    run_training.py          # corre el training sin Jupyter
+    build_notebook_03.py        # regenera notebook 03 desde Python
+    build_notebook_04.py        # idem 04
+    run_training.py             # corre el training en SageMaker sin Jupyter
+    repack_model.py             # inyecta code/inference.py al model.tar.gz
+    register_model_package.py   # registra el modelo en Model Registry (Approved)
+    smoke_test_endpoint.py      # invoca el endpoint con una imagen local
   tests/
-    test_scoring_logic.py    # 9 tests del scoring puro
-  data/                      # ignorado, gestionado por DVC
+    test_scoring_logic.py            # 9 tests del scoring puro
+    test_invoke_modelo_a.py          # 5 tests del handler con mocks
+    test_compute_score_handler.py    # 5 tests del handler con mock DynamoDB
+  data/                      # ignorado, gestionado por DVC (data/lemons.dvc)
+  models/                    # ignorado, gestionado por DVC (models/modelo_a.pth.dvc)
   .dvc/                      # config DVC
-  .github/workflows/         # CI: black --check + pytest
+  .github/workflows/         # CI: black --check + pytest tests/
 ```
