@@ -1,0 +1,5 @@
+outs:
+- md5: cbf25c86e350e3ac65ff2cd477cbb571
+  size: 9145481
+  hash: md5
+  path: modelo_a.pth
