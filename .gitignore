@@ -62,3 +62,9 @@ Thumbs.db
 # Variables de entorno
 .env
 .env.local
+
+# Tooling local de versiones (pyenv / mise) — cada quien elige cómo instala 3.11
+.python-version
+.mise.toml
+mise.toml
+.tool-versions
