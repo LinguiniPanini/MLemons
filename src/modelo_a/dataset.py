@@ -38,7 +38,8 @@ def split_samples(samples, val_size=0.15, test_size=0.15, seed=42):
     labels = [s[1] for s in samples]
 
     train_paths, temp_paths, train_y, temp_y = train_test_split(
-        paths, labels,
+        paths,
+        labels,
         test_size=val_size + test_size,
         random_state=seed,
         stratify=labels,
@@ -46,7 +47,8 @@ def split_samples(samples, val_size=0.15, test_size=0.15, seed=42):
 
     rel_test = test_size / (val_size + test_size)
     val_paths, test_paths, val_y, test_y = train_test_split(
-        temp_paths, temp_y,
+        temp_paths,
+        temp_y,
         test_size=rel_test,
         random_state=seed,
         stratify=temp_y,
@@ -72,9 +74,12 @@ def build_datasets(root_dir, train_transform=None, eval_transform=None):
 if __name__ == "__main__":
     # smoke test: corre `python -m src.modelo_a.dataset data/lemons`
     import sys
+
     root = sys.argv[1] if len(sys.argv) > 1 else "data/lemons"
     samples = list_samples(root)
     print(f"Total muestras: {len(samples)}")
     train, val, test = split_samples(samples)
     print(f"train {len(train)} | val {len(val)} | test {len(test)}")
-    print(f"train balance: {sum(1 for _, y in train if y == 0)} sano / {sum(1 for _, y in train if y == 1)} defectuoso")
+    print(
+        f"train balance: {sum(1 for _, y in train if y == 0)} sano / {sum(1 for _, y in train if y == 1)} defectuoso"
+    )

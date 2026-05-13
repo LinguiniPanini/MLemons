@@ -7,20 +7,24 @@ SIZE = 224
 
 
 def train_transform():
-    return transforms.Compose([
-        transforms.Resize((SIZE, SIZE)),
-        transforms.RandomHorizontalFlip(p=0.5),
-        transforms.RandomVerticalFlip(p=0.5),
-        transforms.RandomRotation(degrees=15),
-        transforms.ColorJitter(brightness=0.2, contrast=0.2, saturation=0.2),
-        transforms.ToTensor(),
-        transforms.Normalize(mean=MEAN, std=STD),
-    ])
+    return transforms.Compose(
+        [
+            transforms.Resize((SIZE, SIZE)),
+            transforms.RandomHorizontalFlip(p=0.5),
+            transforms.RandomVerticalFlip(p=0.5),
+            transforms.RandomRotation(degrees=15),
+            transforms.ColorJitter(brightness=0.2, contrast=0.2, saturation=0.2),
+            transforms.ToTensor(),
+            transforms.Normalize(mean=MEAN, std=STD),
+        ]
+    )
 
 
 def eval_transform():
-    return transforms.Compose([
-        transforms.Resize((SIZE, SIZE)),
-        transforms.ToTensor(),
-        transforms.Normalize(mean=MEAN, std=STD),
-    ])
+    return transforms.Compose(
+        [
+            transforms.Resize((SIZE, SIZE)),
+            transforms.ToTensor(),
+            transforms.Normalize(mean=MEAN, std=STD),
+        ]
+    )

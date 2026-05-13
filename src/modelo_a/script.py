@@ -72,7 +72,9 @@ if __name__ == "__main__":
     parser.add_argument("--num_workers", type=int, default=2)
     parser.add_argument("--seed", type=int, default=42)
     # rutas: SageMaker inyecta SM_*; en local pasas --train data/lemons --model-dir models
-    parser.add_argument("--train", type=str, default=os.environ.get("SM_CHANNEL_TRAIN", "data/lemons"))
+    parser.add_argument(
+        "--train", type=str, default=os.environ.get("SM_CHANNEL_TRAIN", "data/lemons")
+    )
     parser.add_argument("--model-dir", type=str, default=os.environ.get("SM_MODEL_DIR", "models"))
     args, _ = parser.parse_known_args()
 
@@ -80,7 +82,9 @@ if __name__ == "__main__":
     torch.set_num_threads(4)
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     print(f"Device: {device}")
-    print(f"Args: lr={args.lr} batch={args.batch_size} epochs={args.epochs} freeze={args.freeze_backbone}")
+    print(
+        f"Args: lr={args.lr} batch={args.batch_size} epochs={args.epochs} freeze={args.freeze_backbone}"
+    )
 
     # datasets
     train_ds, val_ds, test_ds = build_datasets(
@@ -90,12 +94,27 @@ if __name__ == "__main__":
     )
     print(f"Datasets: train {len(train_ds)} | val {len(val_ds)} | test {len(test_ds)}")
 
-    train_loader = DataLoader(train_ds, batch_size=args.batch_size, shuffle=True,
-                              num_workers=args.num_workers, persistent_workers=args.num_workers > 0)
-    val_loader = DataLoader(val_ds, batch_size=args.batch_size, shuffle=False,
-                            num_workers=args.num_workers, persistent_workers=args.num_workers > 0)
-    test_loader = DataLoader(test_ds, batch_size=args.batch_size, shuffle=False,
-                             num_workers=args.num_workers, persistent_workers=args.num_workers > 0)
+    train_loader = DataLoader(
+        train_ds,
+        batch_size=args.batch_size,
+        shuffle=True,
+        num_workers=args.num_workers,
+        persistent_workers=args.num_workers > 0,
+    )
+    val_loader = DataLoader(
+        val_ds,
+        batch_size=args.batch_size,
+        shuffle=False,
+        num_workers=args.num_workers,
+        persistent_workers=args.num_workers > 0,
+    )
+    test_loader = DataLoader(
+        test_ds,
+        batch_size=args.batch_size,
+        shuffle=False,
+        num_workers=args.num_workers,
+        persistent_workers=args.num_workers > 0,
+    )
 
     # modelo + optimizador
     model = build_model(args.freeze_backbone).to(device)
@@ -112,14 +131,20 @@ if __name__ == "__main__":
 
     for epoch in range(args.epochs):
         t0 = time.time()
-        train_loss, train_acc = run_epoch(model, train_loader, criterion, optimizer, device, train_mode=True)
-        val_loss, val_acc = run_epoch(model, val_loader, criterion, optimizer, device, train_mode=False)
+        train_loss, train_acc = run_epoch(
+            model, train_loader, criterion, optimizer, device, train_mode=True
+        )
+        val_loss, val_acc = run_epoch(
+            model, val_loader, criterion, optimizer, device, train_mode=False
+        )
         elapsed = time.time() - t0
 
-        print(f"Epoch {epoch + 1}/{args.epochs} "
-              f"train_loss={train_loss:.4f} train_acc={train_acc:.4f} "
-              f"val_loss={val_loss:.4f} val_acc={val_acc:.4f} "
-              f"time={elapsed:.1f}s")
+        print(
+            f"Epoch {epoch + 1}/{args.epochs} "
+            f"train_loss={train_loss:.4f} train_acc={train_acc:.4f} "
+            f"val_loss={val_loss:.4f} val_acc={val_acc:.4f} "
+            f"time={elapsed:.1f}s"
+        )
 
         if val_acc > best_val_acc:
             best_val_acc = val_acc
@@ -128,6 +153,8 @@ if __name__ == "__main__":
 
     # test final con el mejor checkpoint
     model.load_state_dict(torch.load(model_path))
-    test_loss, test_acc = run_epoch(model, test_loader, criterion, optimizer, device, train_mode=False)
+    test_loss, test_acc = run_epoch(
+        model, test_loader, criterion, optimizer, device, train_mode=False
+    )
     print(f"Test loss: {test_loss:.4f}")
     print(f"Test accuracy: {test_acc:.4f}")  # captado por metric_definitions regex
