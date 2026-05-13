@@ -1,0 +1,6 @@
+outs:
+- md5: 79993dda7dada41bdcaaf07d380f4614.dir
+  size: 80885026
+  nfiles: 2528
+  hash: md5
+  path: lemons
