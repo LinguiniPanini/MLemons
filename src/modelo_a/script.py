@@ -8,8 +8,14 @@ import torch.optim as optim
 from torch.utils.data import DataLoader
 from torchvision.models import mobilenet_v2, MobileNet_V2_Weights
 
-from src.modelo_a.dataset import build_datasets
-from src.modelo_a.transforms import train_transform, eval_transform
+try:
+    # SageMaker container: source_dir es el cwd, imports flat
+    from dataset import build_datasets
+    from transforms import train_transform, eval_transform
+except ImportError:
+    # Local desde la raiz del repo
+    from src.modelo_a.dataset import build_datasets
+    from src.modelo_a.transforms import train_transform, eval_transform
 
 
 def build_model(freeze_backbone):
