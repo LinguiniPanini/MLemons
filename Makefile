@@ -16,8 +16,8 @@ help:
 	@echo "  make test          Correr pytest con coverage (dentro del venv)"
 	@echo "  make apply         terraform apply (toda la infra)"
 	@echo "  make destroy       terraform destroy (toda la infra)"
-	@echo "  make endpoint-up   Crear endpoint SageMaker Modelo B"
-	@echo "  make endpoint-down Apagar endpoint SageMaker Modelo B"
+	@echo "  make endpoint-up   Crear endpoint SageMaker Modelo A"
+	@echo "  make endpoint-down Apagar endpoint SageMaker Modelo A"
 	@echo "  make clean         Limpiar artefactos (__pycache__, .pytest_cache)"
 	@echo ""
 	@echo "Para usar Jupyter o comandos ad-hoc, activa el venv:"
@@ -39,17 +39,21 @@ test:
 	$(VENV)/bin/pytest tests/ --cov=src --cov-report=term-missing
 
 apply:
-	cd infra && terraform init && terraform apply
+	cd infra && terraform init && \
+	  eval "$$(aws configure export-credentials --format env)" && \
+	  terraform apply
 
 destroy:
-	cd infra && terraform destroy
+	cd infra && \
+	  eval "$$(aws configure export-credentials --format env)" && \
+	  terraform destroy
 
 endpoint-up:
-	aws sagemaker create-endpoint --endpoint-name mlemons-modelo-b-endpoint --endpoint-config-name mlemons-modelo-b-config
+	aws sagemaker create-endpoint --endpoint-name mlemons-modelo-a-endpoint --endpoint-config-name mlemons-modelo-a-config
 
 endpoint-down:
-	aws sagemaker delete-endpoint --endpoint-name mlemons-modelo-b-endpoint || true
-	aws sagemaker delete-endpoint-config --endpoint-config-name mlemons-modelo-b-config || true
+	aws sagemaker delete-endpoint --endpoint-name mlemons-modelo-a-endpoint || true
+	aws sagemaker delete-endpoint-config --endpoint-config-name mlemons-modelo-a-config || true
 
 clean:
 	find . -type d -name __pycache__ -not -path './$(VENV)/*' -exec rm -rf {} + 2>/dev/null || true
