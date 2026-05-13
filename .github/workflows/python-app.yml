@@ -32,5 +32,5 @@ jobs:
       - name: Lint con black --check
         run: black --check src/ tests/
 
-      - name: Tests scoring logic
-        run: pytest tests/test_scoring_logic.py -v
+      - name: Tests
+        run: pytest tests/ -v
